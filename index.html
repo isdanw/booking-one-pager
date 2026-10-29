@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>一页预约 · 个体户预约工具</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --line:#e4e7ec; --line-soft:#f0f1f4;
+    --text:#101828; --muted:#667085; --accent:#0f766e; --accent-dark:#0b5c56;
+    --accent-soft:#e8f4f1; --danger:#b42318; --danger-soft:#fef3f2;
+    --radius:14px; --shadow:0 1px 2px rgba(16,24,40,.05), 0 10px 30px rgba(16,24,40,.05);
+  }
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  [hidden]{display:none!important}
+  button{font:inherit;cursor:pointer}
+  input,select{font:inherit;color:inherit}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:1040px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .logo{width:36px;height:36px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:16px;letter-spacing:.02em;flex:0 0 auto}
+  .brand h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.01em}
+  .brand p{margin:0;font-size:12px;color:var(--muted);line-height:1.35}
+  .switch{display:flex;background:#eef0f3;border-radius:11px;padding:3px;gap:2px;flex:0 0 auto}
+  .switch button{border:0;background:transparent;color:var(--muted);padding:7px 16px;border-radius:9px;font-size:14px;font-weight:600;transition:.15s}
+  .switch button:hover{color:var(--text)}
+  .switch button.active{background:#fff;color:var(--accent-dark);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+
+  /* ---------- 布局 ---------- */
+  main{max-width:1040px;margin:0 auto;padding:22px 20px 64px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .card h2{margin:0 0 3px;font-size:16px;font-weight:700;letter-spacing:.01em}
+  .sub{margin:0;font-size:13px;color:var(--muted)}
+  .row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));align-items:end}
+  .row + .row{margin-top:12px}
+  .field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:500;min-width:0}
+  .field span{display:block}
+  input[type=text],input[type=tel],input[type=date],input[type=time],select{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;
+    outline:none;transition:border-color .15s,box-shadow .15s;font-size:14px;color:var(--text);
+    min-width:0;
+  }
+  input::placeholder{color:#a5adba}
+  input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+
+  .btn{border:1px solid transparent;border-radius:9px;padding:9px 16px;font-weight:600;font-size:14px;transition:.15s;white-space:nowrap}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-dark)}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--text)}
+  .btn.ghost:hover{border-color:#cfd4dc;background:#fbfcfd}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .link{background:none;border:0;color:var(--muted);font-size:13px;padding:2px 6px;border-radius:6px;white-space:nowrap}
+  .link:hover{color:var(--accent);background:var(--accent-soft)}
+  .link.danger:hover{color:var(--danger);background:var(--danger-soft)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+  .actions .spacer{flex:1 1 auto}
+  .hint{margin:10px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
+  .empty{color:var(--muted);font-size:13.5px;padding:16px;text-align:center;border:1px dashed var(--line);border-radius:11px;background:#fcfcfd;line-height:1.7}
+
+  /* ---------- 拆分结果编辑器 ---------- */
+  #editorBox{margin-top:18px;border-top:1px solid var(--line-soft);padding-top:16px}
+  .daygroup{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+  .daygroup:last-child{margin-bottom:0}
+  .daygroup-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fafbfc;padding:9px 13px;border-bottom:1px solid var(--line-soft)}
+  .daygroup-head .dt{font-weight:700;font-size:13.5px}
+  .daygroup-head .dm{font-size:12.5px;color:var(--muted);margin-left:8px}
+  .daygroup-body{padding:6px 13px 10px}
+  .slot-edit{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--line-soft)}
+  .slot-edit:last-child{border-bottom:0}
+  .slot-edit .idx{width:22px;color:#98a2b3;font-size:12px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .slot-edit input[type=time]{flex:0 0 98px;width:98px;padding:6px 8px;font-size:13.5px;font-variant-numeric:tabular-nums}
+  .slot-edit .dash{color:#98a2b3;flex:0 0 auto}
+  .slot-edit .dur{font-size:12px;color:var(--muted);min-width:56px;flex:0 0 auto}
+  .slot-edit.bad input[type=time]{border-color:var(--danger);background:var(--danger-soft)}
+
+  /* ---------- 服务列表 ---------- */
+  .svc{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .svc:last-child{margin-bottom:0}
+  .svc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .svc-name{font-weight:700;font-size:15px}
+  .tag{display:inline-block;margin-left:8px;background:#f2f4f7;color:var(--muted);font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px}
+  .slot-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  .slot-item{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:9px;padding:4px 5px 4px 9px;font-size:12.5px;background:#fcfcfd}
+  .slot-item .txt{color:var(--text);font-variant-numeric:tabular-nums}
+  .badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.02em;white-space:nowrap}
+  .badge.free{background:var(--accent-soft);color:var(--accent-dark)}
+  .badge.booked{background:var(--danger-soft);color:var(--danger)}
+  .badge.past{background:#f2f4f7;color:#98a2b3}
+
+  /* ---------- 客户视图：整天时间轴 ---------- */
+  .cust-svc{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+  .cust-svc:last-child{margin-bottom:0}
+  .cust-svc h3{margin:0;font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .day{margin-top:16px}
+  .day:first-of-type{margin-top:12px}
+  .day-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+  .day-title{font-size:13.5px;font-weight:700}
+  .day-meta{font-size:12px;color:var(--muted)}
+  .tl{list-style:none;margin:0;padding:0;position:relative}
+  .tl::before{content:'';position:absolute;left:5px;top:16px;bottom:16px;width:2px;background:#e7eaee;border-radius:2px}
+  .tl-row{position:relative;padding:0 0 8px 24px}
+  .tl-row:last-child{padding-bottom:0}
+  .tl-row::before{content:'';position:absolute;left:1px;top:15px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-sizing:border-box}
+  .tl-row[data-state=booked]::before{border-color:#d92d20}
+  .tl-row[data-state=past]::before{border-color:#cfd4dc}
+  .tl-slot{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
+    background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px 12px;transition:.15s}
+  .tl-slot .t{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  .tl-slot .d{font-size:12px;color:var(--muted);margin-left:7px;font-weight:500}
+  .tl-slot .s{font-size:12px;font-weight:700;white-space:nowrap}
+  .tl-slot .s.free{color:var(--accent-dark)}
+  .tl-slot .s.booked{color:var(--danger)}
+  .tl-slot .s.past{color:#98a2b3}
+  button.tl-slot:hover{border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,118,110,.1)}
+  .tl-slot[data-state=booked]{background:var(--danger-soft);border-color:#fbd6d2;cursor:not-allowed}
+  .tl-slot[data-state=booked] .t{color:#912018}
+  .tl-slot[data-state=past]{background:#fafbfc;border-style:dashed;cursor:not-allowed}
+  .tl-slot[data-state=past] .t{color:#98a2b3}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+  /* ---------- 表格 ---------- */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:11px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:620px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+  th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:12.5px;letter-spacing:.02em}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:#fcfdfd}
+  td.mono{font-variant-numeric:tabular-nums}
+
+  /* ---------- 弹窗 ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(16,24,40,.45);display:grid;place-items:center;padding:20px;z-index:50}
+  .dialog{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(16,24,40,.22)}
+  .dialog h3{margin:0 0 4px;font-size:17px}
+  .dialog .summary{background:var(--accent-soft);border-radius:11px;padding:11px 13px;font-size:13.5px;color:var(--accent-dark);margin:12px 0 16px;line-height:1.55}
+  .dialog .summary b{display:block;font-size:14.5px;color:#0b3d38}
+  .dialog .field{margin-bottom:12px}
+  .dialog .msg{color:var(--danger);font-size:13px;min-height:19px;margin:-4px 0 8px}
+  .dlg-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+
+  /* ---------- toast ---------- */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:#101828;color:#fff;padding:10px 18px;border-radius:10px;font-size:13.5px;font-weight:500;opacity:0;pointer-events:none;transition:.22s;z-index:60;max-width:calc(100% - 40px);text-align:center}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  #toast.err{background:#912018}
+
+  footer{max-width:1040px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:12.5px;text-align:center;line-height:1.7}
+  @media (max-width:560px){
+    .topbar-in{padding:10px 14px}
+    .brand p{display:none}
+    main{padding:16px 14px 48px}
+    .card{padding:16px}
+    .card-head{flex-wrap:wrap}
+    .row{grid-template-columns:1fr 1fr}
+    .row .field.wide{grid-column:1 / -1}
+    .slot-edit{gap:5px;padding:5px 0}
+    .slot-edit .idx{width:16px;font-size:11.5px}
+    .slot-edit input[type=time]{flex:0 0 80px;width:80px;padding:5px 6px;font-size:13px}
+    .slot-edit .dur{display:none}
+    .slot-edit .dash{margin:0 -1px}
+    .tl-row{padding-left:20px}
+    .tl::before{left:4px}
+    .tl-row::before{left:0}
+    .tl-slot{padding:8px 10px}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="logo">约</div>
+      <div>
+        <h1>一页预约</h1>
+        <p>填营业时间，自动拆时段，客户自己点</p>
+      </div>
+    </div>
+    <div class="switch" role="tablist" aria-label="视图切换">
+      <button role="tab" data-view="owner" class="active" aria-selected="true">经营者</button>
+      <button role="tab" data-view="customer" aria-selected="false">客户</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= 经营者视图 ================= -->
+  <section id="view-owner">
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>1 · 设营业时间，自动拆时段</h2>
+          <p class="sub">填营业时间和单个服务的时长，系统把整天拆成连续时段；拆完可以改、可以删、可以加。</p>
+        </div>
+        <button class="link" id="btnDemo">填入示例数据</button>
+      </div>
+
+      <div class="row">
+        <label class="field wide"><span>服务名</span>
+          <input type="text" id="svcName" placeholder="例：剪发（男士）" maxlength="30" />
+        </label>
+        <label class="field"><span>单个服务时长</span>
+          <select id="svcDur">
+            <option value="15">15 分钟</option>
+            <option value="30" selected>30 分钟</option>
+            <option value="45">45 分钟</option>
+            <option value="60">60 分钟</option>
+            <option value="90">90 分钟</option>
+            <option value="120">120 分钟</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="field"><span>营业日期</span>
+          <input type="date" id="openDate" />
+        </label>
+        <label class="field"><span>连续几天</span>
+          <select id="dayCount">
+            <option value="1" selected>1 天</option>
+            <option value="2">2 天</option>
+            <option value="3">3 天</option>
+            <option value="4">4 天</option>
+            <option value="5">5 天</option>
+            <option value="6">6 天</option>
+            <option value="7">7 天</option>
+          </select>
+        </label>
+        <label class="field"><span>营业开始</span>
+          <input type="time" id="openStart" value="09:00" step="300" />
+        </label>
+        <label class="field"><span>营业结束</span>
+          <input type="time" id="openEnd" value="18:00" step="300" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btnSplit">按营业时间拆分</button>
+        <span class="sub" id="splitHint"></span>
+      </div>
+
+      <div id="editorBox" hidden>
+        <div class="card-head" style="margin-bottom:10px">
+          <div>
+            <h2 style="font-size:14.5px">拆出来的时段</h2>
+            <p class="sub">时间可以直接改；不想要的删掉；需要的话再补一段。</p>
+          </div>
+        </div>
+        <div id="slotEditor"></div>
+        <div class="actions">
+          <button class="btn primary" id="btnSaveSvc">保存并挂出去</button>
+          <button class="btn ghost" id="btnReset">重新拆分</button>
+          <span class="spacer"></span>
+          <span class="sub" id="draftHint"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>2 · 我的服务</h2>
+          <p class="sub">已挂出去的服务，按天列出全部时段和状态。切到「客户」视图看到的是同一个时间轴。</p>
+        </div>
+      </div>
+      <div id="svcList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>3 · 预约单 <span class="tag" id="bkCount">0 条</span></h2>
+          <p class="sub">客户留的姓名和电话。导出内容与这张表一一对应。</p>
+        </div>
+      </div>
+      <div id="bookingList"></div>
+      <div class="actions">
+        <button class="btn ghost" id="btnCsv">导出 CSV</button>
+        <button class="btn ghost" id="btnTxt">导出文本</button>
+        <button class="btn ghost" id="btnCopy">复制文本</button>
+        <span class="spacer"></span>
+        <button class="link danger" id="btnClearBk">清空预约单</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ================= 客户视图 ================= -->
+  <section id="view-customer" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>选一个时间</h2>
+          <p class="sub">整天时间轴，绿色的可以点，红色的已约满。留个姓名和电话就成，不用注册、不用付款。</p>
+        </div>
+      </div>
+      <div id="custServices"></div>
+      <div class="legend">
+        <span><i style="background:#fff;border:2px solid #0f766e"></i>空闲</span>
+        <span><i style="background:#fff;border:2px solid #d92d20"></i>已约满</span>
+        <span><i style="background:#fff;border:2px solid #cfd4dc"></i>已过期</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  所有数据只保存在这台电脑的浏览器里（localStorage）。不联网、不上传、不需要账号。<br />
+  换浏览器或清除网站数据后，记录会消失 —— 重要单子请先导出。
+  <div id="storageWarn" hidden style="margin-top:10px;color:#912018;background:#fef3f2;border:1px solid #fbd6d2;border-radius:10px;padding:9px 12px">
+    这个浏览器不允许本地存储（可能是隐私模式），本次填写的内容在关闭页面后会丢失，请用「导出」先保存。
+  </div>
+</footer>
+
+<!-- 预约弹窗 -->
+<div class="overlay" id="overlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <h3 id="dlgTitle">确认预约</h3>
+    <p class="sub">留个联系方式，经营者好找到你。</p>
+    <div class="summary" id="dlgSummary"></div>
+    <label class="field" style="margin-bottom:12px"><span>姓名</span>
+      <input type="text" id="custName" placeholder="例：张三" maxlength="20" autocomplete="off" />
+    </label>
+    <label class="field"><span>手机号</span>
+      <input type="tel" id="custPhone" placeholder="例：13800000000" maxlength="20" inputmode="numeric" autocomplete="off" />
+    </label>
+    <div class="msg" id="dlgMsg"></div>
+    <div class="dlg-actions">
+      <button class="btn ghost" id="dlgCancel">取消</button>
+      <button class="btn primary" id="dlgOk">确认预约</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 存储 ================= */
+  var DB_KEY = 'booking_onepager_v1';
+
+  function blank() { return { services: [], bookings: [] }; }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(DB_KEY);
+      if (!raw) return blank();
+      var d = JSON.parse(raw);
+      return {
+        services: Array.isArray(d.services) ? d.services : [],
+        bookings: Array.isArray(d.bookings) ? d.bookings : []
+      };
+    } catch (e) { return blank(); }
+  }
+
+  function persist(next) {
+    db = next;
+    try { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+    catch (e) {
+      var w = document.getElementById('storageWarn');
+      if (w) w.hidden = false;
+      toast('本地存储写入失败，数据只在本次打开期间有效', true);
+    }
+  }
+
+  function storageProbe() {
+    try { localStorage.setItem('__probe__', '1'); localStorage.removeItem('__probe__'); return true; }
+    catch (e) { return false; }
+  }
+
+  var db = load();
+  var draft = null;            // { openStart, openEnd, days:[{date, slots:[{start,end}]}] }
+  var selectedSlot = null;     // { serviceId, slotId }
+
+  /* ================= 工具 ================= */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function toMin(hhmm) {
+    if (!hhmm || hhmm.indexOf(':') < 0) return NaN;
+    var p = hhmm.split(':');
+    var h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+    if (isNaN(h) || isNaN(m)) return NaN;
+    return h * 60 + m;
+  }
+  function fmtMin(min) {
+    min = Math.max(0, Math.min(24 * 60, Math.round(min)));
+    return pad(Math.floor(min / 60)) + ':' + pad(min % 60);
+  }
+  function niceDate(d) {
+    var dt = new Date(d + 'T00:00:00');
+    if (isNaN(dt.getTime())) return d;
+    return (dt.getMonth() + 1) + '月' + dt.getDate() + '日 周' + '日一二三四五六'.charAt(dt.getDay());
+  }
+  function todayStr() {
+    var t = new Date();
+    return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
+  }
+  function addDays(dateStr, n) {
+    var t = new Date(dateStr + 'T00:00:00');
+    if (isNaN(t.getTime())) return dateStr;
+    t.setDate(t.getDate() + n);
+    return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
+  }
+  function fmtDT(iso) {
+    var t = new Date(iso);
+    if (isNaN(t.getTime())) return '';
+    return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()) +
+      ' ' + pad(t.getHours()) + ':' + pad(t.getMinutes());
+  }
+  function slotEndTs(slot) {
+    var t = new Date(slot.date + 'T' + (slot.end || '23:59') + ':00');
+    return isNaN(t.getTime()) ? 0 : t.getTime();
+  }
+  function isPast(slot) { return slotEndTs(slot) < Date.now(); }
+  function isBooked(slotId) {
+    return db.bookings.some(function (b) { return b.slotId === slotId; });
+  }
+  function findService(id) {
+    for (var i = 0; i < db.services.length; i++) if (db.services[i].id === id) return db.services[i];
+    return null;
+  }
+  function findSlot(svcId, slotId) {
+    var s = findService(svcId);
+    if (!s) return null;
+    for (var i = 0; i < s.slots.length; i++) if (s.slots[i].id === slotId) return s.slots[i];
+    return null;
+  }
+  function groupByDate(slots) {
+    var map = {}, order = [];
+    slots.slice().sort(function (a, b) {
+      return (a.date + a.start) < (b.date + b.start) ? -1 : 1;
+    }).forEach(function (sl) {
+      if (!map[sl.date]) { map[sl.date] = []; order.push(sl.date); }
+      map[sl.date].push(sl);
+    });
+    return order.map(function (d) { return { date: d, slots: map[d] }; });
+  }
+
+  var toastTimer = null;
+  function toast(msg, isErr) {
+    var el = $('#toast');
+    el.textContent = msg;
+    el.className = isErr ? 'show err' : 'show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.className = ''; }, 2600);
+  }
+
+  /* ================= 视图切换 ================= */
+  function setView(v) {
+    $$('.switch button').forEach(function (b) {
+      var on = b.dataset.view === v;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    $('#view-owner').hidden = v !== 'owner';
+    $('#view-customer').hidden = v !== 'customer';
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ================= 拆分逻辑 ================= */
+  function splitTimes(openStart, openEnd, dur) {
+    var s = toMin(openStart), e = toMin(openEnd);
+    if (isNaN(s) || isNaN(e) || e <= s) return null;
+    var out = [];
+    for (var m = s; m + dur <= e; m += dur) out.push({ start: fmtMin(m), end: fmtMin(m + dur) });
+    return { slots: out, tail: e - (s + out.length * dur) };
+  }
+
+  function updateSplitHint() {
+    var dur = parseInt($('#svcDur').value, 10) || 30;
+    var days = parseInt($('#dayCount').value, 10) || 1;
+    var r = splitTimes($('#openStart').value, $('#openEnd').value, dur);
+    var el = $('#splitHint');
+    if (!r) { el.textContent = ''; return; }
+    if (!r.slots.length) { el.textContent = '营业时间不够一个 ' + dur + ' 分钟时段'; return; }
+    el.textContent = '每天 ' + r.slots.length + ' 段 × ' + days + ' 天，共 ' +
+      (r.slots.length * days) + ' 段' + (r.tail ? '（末尾 ' + r.tail + ' 分钟不足一段，会跳过）' : '');
+  }
+
+  function doSplit() {
+    var name = $('#svcName').value.trim();
+    var dur = parseInt($('#svcDur').value, 10) || 30;
+    var date = $('#openDate').value;
+    var days = parseInt($('#dayCount').value, 10) || 1;
+    var os = $('#openStart').value, oe = $('#openEnd').value;
+
+    if (!name) { toast('先给服务起个名字', true); $('#svcName').focus(); return; }
+    if (!date) { toast('选一个营业日期', true); return; }
+    if (!os || !oe) { toast('把营业开始和结束时间都填上', true); return; }
+    if (toMin(os) >= toMin(oe)) { toast('营业结束要晚于开始', true); return; }
+
+    var r = splitTimes(os, oe, dur);
+    if (!r || !r.slots.length) { toast('营业时间不够一个时段，调一下时长或营业时间', true); return; }
+
+    var arr = [];
+    for (var i = 0; i < days; i++) {
+      arr.push({
+        date: addDays(date, i),
+        slots: r.slots.map(function (s) { return { start: s.start, end: s.end }; })
+      });
+    }
+    draft = { openStart: os, openEnd: oe, duration: dur, days: arr };
+    $('#editorBox').hidden = false;
+    renderEditor();
+    toast('已拆出 ' + (r.slots.length * days) + ' 段，可以逐段调整');
+    $('#editorBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function renderEditor() {
+    var box = $('#slotEditor');
+    if (!draft) { box.innerHTML = ''; $('#draftHint').textContent = ''; return; }
+
+    box.innerHTML = draft.days.map(function (day, di) {
+      var rows = day.slots.length ? day.slots.map(function (sl, si) {
+        var d = toMin(sl.end) - toMin(sl.start);
+        return '<div class="slot-edit">' +
+          '<span class="idx">' + (si + 1) + '</span>' +
+          '<input type="time" step="300" value="' + esc(sl.start) + '" data-day="' + di + '" data-i="' + si + '" data-role="start" aria-label="开始时间" />' +
+          '<span class="dash">–</span>' +
+          '<input type="time" step="300" value="' + esc(sl.end) + '" data-day="' + di + '" data-i="' + si + '" data-role="end" aria-label="结束时间" />' +
+          '<span class="dur">' + (d > 0 ? d + ' 分钟' : '—') + '</span>' +
+          '<button class="link danger" data-act="rm-slot" data-day="' + di + '" data-i="' + si + '" style="margin-left:6px">删除</button>' +
+          '</div>';
+      }).join('') : '<div class="sub" style="padding:8px 0">这天没有时段，点下面「补一段」。</div>';
+
+      return '<div class="daygroup">' +
+        '<div class="daygroup-head">' +
+        '<div><span class="dt">' + esc(niceDate(day.date)) + '</span>' +
+        '<span class="dm">' + esc(draft.openStart) + '–' + esc(draft.openEnd) + ' · ' + day.slots.length + ' 段</span></div>' +
+        '<div>' +
+        '<button class="link" data-act="add-slot" data-day="' + di + '">+ 补一段</button>' +
+        '<button class="link danger" data-act="rm-day" data-day="' + di + '">删除整天</button>' +
+        '</div>' +
+        '</div>' +
+        '<div class="daygroup-body">' + rows + '</div>' +
+        '</div>';
+    }).join('');
+
+    var total = draft.days.reduce(function (n, d) { return n + d.slots.length; }, 0);
+    $('#draftHint').textContent = '共 ' + draft.days.length + ' 天 / ' + total + ' 段';
+    $('#btnSaveSvc').disabled = total === 0;
+  }
+
+  // 校验：同一服务同一天内，时段必须 start<end 且互不重叠
+  function validateSlot(day, index) {
+    var sl = day.slots[index];
+    var s = toMin(sl.start), e = toMin(sl.end);
+    if (isNaN(s) || isNaN(e)) return '时间格式不对';
+    if (e <= s) return '结束时间要晚于开始时间';
+    for (var i = 0; i < day.slots.length; i++) {
+      if (i === index) continue;
+      var o = day.slots[i];
+      var os = toMin(o.start), oe = toMin(o.end);
+      if (s < oe && e > os) return '和 ' + o.start + '–' + o.end + ' 这段重叠了';
+    }
+    return '';
+  }
+
+  /* ================= 保存服务 ================= */
+  function saveService() {
+    if (!draft) return toast('先点「按营业时间拆分」', true);
+    var name = $('#svcName').value.trim();
+    if (!name) return toast('先给服务起个名字', true);
+
+    var slots = [];
+    for (var i = 0; i < draft.days.length; i++) {
+      var day = draft.days[i];
+      for (var j = 0; j < day.slots.length; j++) {
+        var err = validateSlot(day, j);
+        if (err) { toast('第 ' + (i + 1) + ' 天有问题的时段：' + err, true); return; }
+        slots.push({ id: uid(), date: day.date, start: day.slots[j].start, end: day.slots[j].end });
+      }
+    }
+    if (!slots.length) return toast('至少留一个时段', true);
+
+    var svc = {
+      id: uid(),
+      name: name,
+      duration: draft.duration,
+      openStart: draft.openStart,
+      openEnd: draft.openEnd,
+      createdAt: new Date().toISOString(),
+      slots: slots
+    };
+
+    var next = load();
+    next.services.push(svc);
+    persist(next);
+
+    draft = null;
+    $('#editorBox').hidden = true;
+    $('#slotEditor').innerHTML = '';
+    $('#svcName').value = '';
+    renderAll();
+    toast('已挂出去：' + name + '，' + slots.length + ' 段，切到「客户」就能约');
+  }
+
+  /* ================= 我的服务 ================= */
+  function renderServices() {
+    var box = $('#svcList');
+    if (!db.services.length) {
+      box.innerHTML = '<div class="empty">还没有服务。上面填营业时间和时长，点「按营业时间拆分」，10 秒就能挂出去。</div>';
+      return;
+    }
+    box.innerHTML = db.services.map(function (svc) {
+      var groups = groupByDate(svc.slots || []);
+      var body = groups.length ? groups.map(function (g) {
+        var items = g.slots.map(function (sl) {
+          var state = isBooked(sl.id) ? 'booked' : (isPast(sl) ? 'past' : 'free');
+          var label = state === 'booked' ? '已约满' : (state === 'past' ? '已过期' : '空闲');
+          return '<span class="slot-item">' +
+            '<span class="txt">' + esc(sl.start) + '–' + esc(sl.end) + '</span>' +
+            '<span class="badge ' + state + '">' + label + '</span>' +
+            (state === 'free' ? '<button class="link danger" data-act="rm-slot" data-svc="' + svc.id + '" data-slot="' + sl.id + '">×</button>' : '') +
+            '</span>';
+        }).join('');
+        return '<div style="margin-top:10px">' +
+          '<div class="sub" style="font-weight:700;color:var(--text);font-size:12.5px">' + esc(niceDate(g.date)) + '</div>' +
+          '<div class="slot-list">' + items + '</div></div>';
+      }).join('') : '<div class="sub" style="margin-top:8px">这个服务没有时段了</div>';
+
+      return '<div class="svc">' +
+        '<div class="svc-head">' +
+        '<div><span class="svc-name">' + esc(svc.name) + '</span><span class="tag">' + svc.duration + ' 分钟</span>' +
+        (svc.openStart ? '<span class="tag">营业 ' + esc(svc.openStart) + '–' + esc(svc.openEnd) + '</span>' : '') +
+        '</div>' +
+        '<button class="link danger" data-act="rm-svc" data-svc="' + svc.id + '">删除服务</button>' +
+        '</div>' + body + '</div>';
+    }).join('');
+  }
+
+  /* ================= 预约排序（列表与导出共用） ================= */
+  function sortedBookings() {
+    return db.bookings.slice().sort(function (a, b) {
+      var ka = a.date + a.start, kb = b.date + b.start;
+      if (ka !== kb) return ka < kb ? -1 : 1;
+      return (a.createdAt || '') < (b.createdAt || '') ? -1 : 1;
+    });
+  }
+
+  /* ================= 预约单 ================= */
+  function renderBookings() {
+    var box = $('#bookingList');
+    var list = sortedBookings();
+    $('#bkCount').textContent = list.length + ' 条';
+
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">还没有人预约。切到「客户」视图自己走一遍试试。</div>';
+      return;
+    }
+
+    var rows = list.map(function (b, i) {
+      return '<tr>' +
+        '<td class="mono">' + (i + 1) + '</td>' +
+        '<td>' + esc(b.name) + '</td>' +
+        '<td class="mono">' + esc(b.phone) + '</td>' +
+        '<td>' + esc(b.serviceName) + '</td>' +
+        '<td class="mono">' + esc(b.date) + ' ' + esc(b.start) + '–' + esc(b.end) + '</td>' +
+        '<td class="mono" style="color:var(--muted)">' + esc(fmtDT(b.createdAt)) + '</td>' +
+        '<td><button class="link danger" data-act="rm-bk" data-bk="' + b.id + '">取消</button></td>' +
+        '</tr>';
+    }).join('');
+
+    box.innerHTML = '<div class="tbl-wrap"><table>' +
+      '<thead><tr><th>#</th><th>客户</th><th>手机号</th><th>服务</th><th>时段</th><th>预约时间</th><th></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  /* ================= 客户视图：整天时间轴 ================= */
+  function renderCustomer() {
+    var box = $('#custServices');
+    var live = db.services.filter(function (s) { return s.slots && s.slots.length; });
+
+    if (!live.length) {
+      box.innerHTML = '<div class="empty">经营者还没挂出可约时段。稍后再来，或让 TA 在「经营者」视图里拆一次营业时间。</div>';
+      return;
+    }
+
+    box.innerHTML = live.map(function (svc) {
+      var groups = groupByDate(svc.slots);
+      var blocks = groups.map(function (g) {
+        var free = 0;
+        var rows = g.slots.map(function (sl) {
+          var state = isBooked(sl.id) ? 'booked' : (isPast(sl) ? 'past' : 'free');
+          var label = state === 'booked' ? '已约满' : (state === 'past' ? '已过期' : '空闲');
+          if (state === 'free') free++;
+          var mins = toMin(sl.end) - toMin(sl.start);
+          var tag = state === 'free'
+            ? '<button class="tl-slot" data-state="free" data-act="pick" data-svc="' + svc.id + '" data-slot="' + sl.id + '">'
+            : '<div class="tl-slot" data-state="' + state + '">';
+          return '<li class="tl-row" data-state="' + state + '">' +
+            tag +
+            '<span><span class="t">' + esc(sl.start) + ' – ' + esc(sl.end) + '</span>' +
+            '<span class="d">' + mins + ' 分钟</span></span>' +
+            '<span class="s ' + state + '">' + label + '</span>' +
+            (state === 'free' ? '</button>' : '</div>') +
+            '</li>';
+        }).join('');
+
+        var openStart = g.slots[0].start, openEnd = g.slots[g.slots.length - 1].end;
+        return '<div class="day">' +
+          '<div class="day-head">' +
+          '<span class="day-title">' + esc(niceDate(g.date)) + '</span>' +
+          '<span class="day-meta">' + esc(openStart) + '–' + esc(openEnd) + ' · 共 ' + g.slots.length +
+          ' 段 · 剩 ' + free + ' 段可约</span>' +
+          '</div>' +
+          '<ol class="tl">' + rows + '</ol>' +
+          '</div>';
+      }).join('');
+
+      return '<div class="cust-svc">' +
+        '<h3>' + esc(svc.name) + '<span class="tag">' + svc.duration + ' 分钟</span></h3>' +
+        blocks + '</div>';
+    }).join('');
+  }
+
+  /* ================= 预约动作 ================= */
+  function openDialog(svcId, slotId) {
+    var svc = findService(svcId);
+    var slot = findSlot(svcId, slotId);
+    if (!svc || !slot) return toast('这个时段已经不存在了，刷新一下', true);
+
+    if (isBooked(slotId)) return toast('这个时段已约满，换一段吧', true);
+    if (isPast(slot)) return toast('这个时段已经过了', true);
+
+    selectedSlot = { serviceId: svcId, slotId: slotId };
+    $('#dlgSummary').innerHTML = '<b>' + esc(svc.name) + '</b>' +
+      esc(niceDate(slot.date)) + ' ' + esc(slot.start) + '–' + esc(slot.end) + '（' + svc.duration + ' 分钟）';
+    $('#custName').value = '';
+    $('#custPhone').value = '';
+    $('#dlgMsg').textContent = '';
+    $('#overlay').hidden = false;
+    setTimeout(function () { $('#custName').focus(); }, 30);
+  }
+
+  function closeDialog() {
+    $('#overlay').hidden = true;
+    selectedSlot = null;
+  }
+
+  function dlgErr(msg) {
+    $('#dlgMsg').textContent = msg;
+  }
+
+  function submitBooking() {
+    if (!selectedSlot) return;
+
+    var name = $('#custName').value.trim();
+    var phone = $('#custPhone').value.replace(/[\s\-()]/g, '');
+
+    if (!name) return dlgErr('请填写姓名');
+    if (!/^\d{6,20}$/.test(phone)) return dlgErr('手机号看起来不对，请填 6–20 位数字');
+
+    var svcId = selectedSlot.serviceId;
+    var slotId = selectedSlot.slotId;
+
+    // 关键：以本地存储里的最新数据为准再判一次，防止同一时段被重复占用
+    var fresh = load();
+    var svc = null, slot = null;
+    for (var i = 0; i < fresh.services.length; i++) {
+      if (fresh.services[i].id === svcId) {
+        svc = fresh.services[i];
+        for (var j = 0; j < svc.slots.length; j++) if (svc.slots[j].id === slotId) slot = svc.slots[j];
+      }
+    }
+    if (!svc || !slot) { dlgErr('这个时段已经不存在了'); persist(fresh); renderAll(); return; }
+
+    var taken = fresh.bookings.some(function (b) { return b.slotId === slotId; });
+    if (taken) {
+      dlgErr('这个时段已约满（刚被别人约走），换一段吧');
+      persist(fresh);
+      renderAll();
+      return;
+    }
+
+    fresh.bookings.push({
+      id: uid(),
+      serviceId: svcId,
+      serviceName: svc.name,
+      slotId: slotId,
+      date: slot.date,
+      start: slot.start,
+      end: slot.end,
+      duration: svc.duration,
+      name: name,
+      phone: phone,
+      createdAt: new Date().toISOString()
+    });
+    persist(fresh);
+
+    closeDialog();
+    renderAll();
+    toast('预约成功：' + niceDate(slot.date) + ' ' + slot.start + '，这段已变已约满');
+  }
+
+  /* ================= 导出 ================= */
+  function csvCell(v) {
+    var s = String(v == null ? '' : v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+
+  function buildCsv() {
+    var head = ['客户姓名', '手机号', '服务', '时长(分钟)', '日期', '开始', '结束', '预约时间'];
+    var lines = [head.map(csvCell).join(',')];
+    sortedBookings().forEach(function (b) {
+      lines.push([b.name, b.phone, b.serviceName, b.duration, b.date, b.start, b.end, fmtDT(b.createdAt)]
+        .map(csvCell).join(','));
+    });
+    return '\ufeff' + lines.join('\r\n');
+  }
+
+  function buildTxt() {
+    var list = sortedBookings();
+    var out = [];
+    out.push('一页预约 · 预约清单');
+    out.push('导出时间：' + fmtDT(new Date().toISOString()));
+    out.push('合计：' + list.length + ' 条');
+    out.push('----------------------------------------');
+    if (!list.length) out.push('（暂无预约）');
+    list.forEach(function (b, i) {
+      out.push((i + 1) + '. ' + b.name + ' | ' + b.phone + ' | ' + b.serviceName + '（' + b.duration + ' 分钟）');
+      out.push('   ' + b.date + ' ' + b.start + '–' + b.end + '   预约于 ' + fmtDT(b.createdAt));
+    });
+    return out.join('\n');
+  }
+
+  function download(filename, text, mime) {
+    var blob = new Blob([text], { type: mime + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  }
+
+  function stamp() {
+    var t = new Date();
+    return t.getFullYear() + pad(t.getMonth() + 1) + pad(t.getDate()) + '-' + pad(t.getHours()) + pad(t.getMinutes());
+  }
+
+  /* ================= 示例数据（纯虚构） ================= */
+  function loadDemo() {
+    var next = load();
+    if (next.services.some(function (s) { return s.name === '剪发（男士）'; })) {
+      return toast('示例已经填过了，看下面的列表就行', true);
+    }
+
+    var svcId = uid();
+    var r = splitTimes('09:00', '12:00', 30);   // 6 段
+    var slots = r.slots.map(function (s) {
+      return { id: uid(), date: addDays(todayStr(), 1), start: s.start, end: s.end };
+    });
+
+    next.services.push({
+      id: svcId,
+      name: '剪发（男士）',
+      duration: 30,
+      openStart: '09:00',
+      openEnd: '12:00',
+      createdAt: new Date().toISOString(),
+      slots: slots
+    });
+
+    // 一条虚构预约，演示「该时段立刻变已约满 / 第二次预约被挡」
+    var s1 = slots[1];
+    next.bookings.push({
+      id: uid(), serviceId: svcId, serviceName: '剪发（男士）',
+      slotId: s1.id, date: s1.date, start: s1.start, end: s1.end, duration: 30,
+      name: '张三', phone: '13800000000', createdAt: new Date().toISOString()
+    });
+
+    persist(next);
+    renderAll();
+    toast('示例已填入：剪发（男士）09:00–12:00 拆成 6 段，09:30 那段已被「张三」约满');
+  }
+
+  /* ================= 渲染总入口 ================= */
+  function renderAll() {
+    renderEditor();
+    renderServices();
+    renderBookings();
+    renderCustomer();
+  }
+
+  /* ================= 事件绑定 ================= */
+  $$('.switch button').forEach(function (b) {
+    b.addEventListener('click', function () { setView(b.dataset.view); });
+  });
+
+  $('#btnSplit').addEventListener('click', doSplit);
+  $('#btnSaveSvc').addEventListener('click', saveService);
+  $('#btnDemo').addEventListener('click', loadDemo);
+  $('#btnReset').addEventListener('click', function () {
+    draft = null;
+    $('#editorBox').hidden = true;
+    $('#slotEditor').innerHTML = '';
+    toast('已清空，可以重新拆分');
+  });
+  ['#svcDur', '#dayCount', '#openStart', '#openEnd'].forEach(function (sel) {
+    $(sel).addEventListener('change', updateSplitHint);
+    $(sel).addEventListener('input', updateSplitHint);
+  });
+
+  // 编辑器：改时间 / 删段 / 补段 / 删整天
+  $('#slotEditor').addEventListener('change', function (e) {
+    var el = e.target;
+    if (!el.dataset || el.dataset.day == null || el.dataset.i == null) return;
+    var di = parseInt(el.dataset.day, 10), si = parseInt(el.dataset.i, 10);
+    var day = draft && draft.days[di];
+    if (!day || !day.slots[si]) return;
+
+    var sl = day.slots[si];
+    var old = { start: sl.start, end: sl.end };
+    var v = el.value;
+    if (!v) { renderEditor(); return; }          // 清空视为放弃修改
+    if (el.dataset.role === 'start') sl.start = v; else sl.end = v;
+
+    var err = validateSlot(day, si);
+    if (err) {
+      sl.start = old.start; sl.end = old.end;
+      renderEditor();
+      toast(err, true);
+      return;
+    }
+    renderEditor();
+  });
+
+  $('#slotEditor').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-act]');
+    if (!btn || !draft) return;
+    var di = parseInt(btn.dataset.day, 10);
+    var day = draft.days[di];
+    if (!day) return;
+    var act = btn.dataset.act;
+
+    if (act === 'rm-slot') {
+      day.slots.splice(parseInt(btn.dataset.i, 10), 1);
+      renderEditor();
+    } else if (act === 'rm-day') {
+      if (!window.confirm('删掉 ' + niceDate(day.date) + ' 这一整天的 ' + day.slots.length + ' 段？')) return;
+      draft.days.splice(di, 1);
+      renderEditor();
+      if (!draft.days.length) toast('所有天都删掉了，点「重新拆分」再来一次', true);
+    } else if (act === 'add-slot') {
+      var dur = draft.duration || 30;
+      var dayOpen = toMin(draft.openStart), dayClose = toMin(draft.openEnd);
+      var sorted = day.slots.slice().sort(function (a, b) { return toMin(a.start) - toMin(b.start); });
+
+      // 先找空档补，找不到再往末尾接
+      var cursor = dayOpen, target = null;
+      for (var k = 0; k < sorted.length; k++) {
+        var st = toMin(sorted[k].start);
+        if (st - cursor >= dur) { target = cursor; break; }
+        cursor = Math.max(cursor, toMin(sorted[k].end));
+      }
+      if (target === null) {
+        if (cursor + dur <= dayClose) target = cursor;
+        else if (!sorted.length) target = dayOpen;
+      }
+      if (target === null) {
+        toast('这天从 ' + draft.openStart + ' 到 ' + draft.openEnd + ' 已经排满了', true);
+        return;
+      }
+      day.slots.push({ start: fmtMin(target), end: fmtMin(Math.min(target + dur, dayClose)) });
+      day.slots.sort(function (a, b) { return toMin(a.start) - toMin(b.start); });
+      renderEditor();
+    }
+  });
+
+  // 服务列表：删服务 / 删时段
+  $('#svcList').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    var act = btn.dataset.act;
+    var next = load();
+
+    if (act === 'rm-slot') {
+      var svcId = btn.dataset.svc, slotId = btn.dataset.slot;
+      next.services.forEach(function (s) {
+        if (s.id === svcId) s.slots = s.slots.filter(function (sl) { return sl.id !== slotId; });
+      });
+      persist(next); renderAll(); toast('时段已删除');
+    }
+
+    if (act === 'rm-svc') {
+      var id = btn.dataset.svc;
+      var svc = findService(id);
+      var cnt = db.bookings.filter(function (b) { return b.serviceId === id; }).length;
+      var warn = '删除服务「' + (svc ? svc.name : '') + '」？' +
+        (cnt ? '\n它的 ' + cnt + ' 条预约记录也会一并删除。' : '');
+      if (!window.confirm(warn)) return;
+      next.services = next.services.filter(function (s) { return s.id !== id; });
+      next.bookings = next.bookings.filter(function (b) { return b.serviceId !== id; });
+      persist(next); renderAll(); toast('服务已删除');
+    }
+  });
+
+  // 预约单：取消某条
+  $('#bookingList').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-act="rm-bk"]');
+    if (!btn) return;
+    if (!window.confirm('取消这条预约？该时段会重新变回空闲。')) return;
+    var next = load();
+    next.bookings = next.bookings.filter(function (b) { return b.id !== btn.dataset.bk; });
+    persist(next); renderAll(); toast('已取消，时段重新变回空闲');
+  });
+
+  // 客户视图：点空闲时段
+  $('#custServices').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-act="pick"]');
+    if (!btn) return;
+    openDialog(btn.dataset.svc, btn.dataset.slot);
+  });
+
+  // 弹窗
+  $('#dlgCancel').addEventListener('click', closeDialog);
+  $('#dlgOk').addEventListener('click', submitBooking);
+  $('#overlay').addEventListener('click', function (e) {
+    if (e.target === $('#overlay')) closeDialog();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('#overlay').hidden) closeDialog();
+    if (e.key === 'Enter' && !$('#overlay').hidden) submitBooking();
+  });
+
+  // 导出
+  $('#btnCsv').addEventListener('click', function () {
+    if (!db.bookings.length) return toast('还没有预约可以导出', true);
+    download('预约单-' + stamp() + '.csv', buildCsv(), 'text/csv');
+    toast('CSV 已下载');
+  });
+  $('#btnTxt').addEventListener('click', function () {
+    if (!db.bookings.length) return toast('还没有预约可以导出', true);
+    download('预约单-' + stamp() + '.txt', buildTxt(), 'text/plain');
+    toast('文本已下载');
+  });
+  $('#btnCopy').addEventListener('click', function () {
+    if (!db.bookings.length) return toast('还没有预约可以复制', true);
+    var text = buildTxt();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('已复制到剪贴板'); },
+        function () { fallbackCopy(text); });
+    } else { fallbackCopy(text); }
+  });
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('已复制到剪贴板'); }
+    catch (e) { toast('复制失败，请用「导出文本」', true); }
+    document.body.removeChild(ta);
+  }
+
+  $('#btnClearBk').addEventListener('click', function () {
+    if (!db.bookings.length) return toast('预约单已经是空的');
+    if (!window.confirm('清空全部 ' + db.bookings.length + ' 条预约？此操作不可撤销，建议先导出。')) return;
+    var next = load();
+    next.bookings = [];
+    persist(next); renderAll(); toast('预约单已清空');
+  });
+
+  /* ================= 初始化 ================= */
+  if (!storageProbe()) $('#storageWarn').hidden = false;
+  $('#openDate').value = todayStr();
+  updateSplitHint();
+  renderAll();
+})();
+</script>
+</body>
+</html>
